@@ -1,0 +1,6 @@
+{
+  "webui_url": "http://localhost:9385",
+  "session_cookie_ref": "auto",
+  "quality": "medium",
+  "_comment": "Session cookie is read at runtime from the browser store; never hardcoded. Layout per DESIGN.md section 4."
+}
