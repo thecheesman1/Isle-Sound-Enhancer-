@@ -20,6 +20,7 @@
 struct Settings {
   std::string webuiUrl = "http://localhost:9385";
   std::string sessionCookie;   // runtime-only, never embedded
+  std::string quality = "medium";  // from settings.json; fed to the DSP/UI layer
 };
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {

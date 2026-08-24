@@ -14,6 +14,8 @@ add_executable(isle_sound_enhancer WIN32
   src/webui_client/webui_client.cpp
 )
 
+set_target_properties(isle_sound_enhancer PROPERTIES OUTPUT_NAME IsleSoundEnhancer)
+
 target_include_directories(isle_sound_enhancer PRIVATE src)
 
 # Sources under these dirs are wired in by their owning pieces

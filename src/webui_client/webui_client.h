@@ -18,6 +18,8 @@
 //   /api/admin/zone-masks  GET  login  {success, masks:{zone:{w,h,mask[]}}}
 //                                   — on load
 //   /api/map/position  GET  login  RCON fallback for a single sid
+//   (LIVE payload is NESTED: {success, position:{x,y,z,heading,in_game}, error}
+//   — the WinHTTP loop must parse position.*; matches the deployed endpoint.)
 //
 // Auth: the session cookie is read at RUNTIME from the user's browser store
 // (Chrome/Edge cookie db or manual paste) — never embedded in the binary.
