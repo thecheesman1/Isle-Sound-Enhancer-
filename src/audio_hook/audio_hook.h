@@ -2,16 +2,15 @@
 
 // Swappable audio-hook slot.
 //
-// Design-direction hold (2026-08-22): the hook mechanism is NOT locked.
-// Candidate implementations, pending boss's EAC decision:
-//   - inject  : in-process, zero latency, EAC surface (only if server
-//               EAC is disabled)
-//   - apo     : Windows APO on the render endpoint (runs in audiodg,
-//               outside the game process, few ms, no EAC surface)
-//   - loopback: capture-based fallback
+// DESIGN.md section 5 (LOCKED, boss 2026-08-24): the hook mechanism is
+// **Windows APO on the render endpoint** (primary) — a COM Audio Processing
+// Object registered on the output endpoint, running inside `audiodg.exe`
+// OUTSIDE the game process: zero EAC surface, few-ms latency, no per-game
+// breakage. WASAPI loopback is the zero-risk fallback. Game DLL injection
+// is a documented why-not (EAC global-ban risk) — do not build.
 //
-// The rest of the app talks only to this interface, so swapping the
-// mechanism is a drop-in change with no ripple.
+// The app talks only to this interface, so the mechanism swap (APO <-> 
+// loopback) is a drop-in change with no ripple.
 
 struct AudioHook {
   virtual ~AudioHook() = default;

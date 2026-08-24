@@ -1,14 +1,18 @@
 # Installer for Isle Sound Enhancer — target layout per DESIGN.md section 4.
 #   C:\IsleSoundEnhancer\
 #       IsleSoundEnhancer.exe
-#       ise.dll                    (audio-hook DLL, mechanism-dependent)
+#       ise_apo.dll                (APO COM effect — REGISTERED, not dropped
+#                                  into the game dir; runs in audiodg)
 #       settings.json
 #       rtgrid.bin                 (cached grid; refreshed on built_at change)
 #       zone_masks.json            (cached masks; refreshed on load)
 #       logs\
-# If the hook mechanism needs a game-side file, it is placed in the game's
-# Binaries\Win64\ (section 5 — PENDING boss's hook decision).
-# MUST NOT touch the webui or the Pi.
+# Hook = Windows APO on the render endpoint (section 5, LOCKED): register the
+# COM APO on the output endpoint + store the DSP params over IPC (property
+# store / named pipe). WASAPI loopback = fallback (no game-dir files either).
+# MUST NOT touch the webui or the Pi. Built on a dev machine / client PC
+# only (boss no-Pi-compile rule); artifacts go to GitHub Releases/central
+# store.
 
 !include "MUI2.nsh"
 
@@ -27,8 +31,8 @@ Unicode True
 Section "Install"
   SetOutPath "$INSTDIR"
   File "..\build\Release\IsleSoundEnhancer.exe"
+  File "..\build\Release\ise_apo.dll"     ; APO COM effect
   File "settings.json"
-  ; File "ise.dll"          ; hook DLL — wire in per DESIGN.md section 5
   CreateDirectory "$INSTDIR\logs"
 
   ; Start with Windows (per DESIGN.md section 7) — registry for the current
@@ -36,20 +40,22 @@ Section "Install"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" \
               "IsleSoundEnhancer" '"$INSTDIR\IsleSoundEnhancer.exe"'
 
-  ; Game-side hook placement — ONLY when the mechanism requires it
-  ; (section 5 pending). Leave commented until then.
-  ; SetOutPath "$PROGRAMFILES64\TheIsle\Binaries\Win64"
-  ; File "ise.dll"
+  ; Register the APO COM object (effect on the render endpoint). regsvr32
+  ; or self-registration flag — real command per the APO implementation
+  ; (piece 2/3). Runs in audiodg; no game-dir file, no game overwrite.
+  ; ExecWait "regsvr32 /s $INSTDIR\ise_apo.dll"
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
 Section "Uninstall"
   Delete "$INSTDIR\IsleSoundEnhancer.exe"
+  Delete "$INSTDIR\ise_apo.dll"
   Delete "$INSTDIR\settings.json"
   RMDir /r "$INSTDIR\logs"
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" \
                  "IsleSoundEnhancer"
+  ; Unregister the APO COM object (mirror of the install step).
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
 SectionEnd
