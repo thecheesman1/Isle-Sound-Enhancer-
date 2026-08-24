@@ -5,27 +5,31 @@ to the Isle game's audio on the player's PC. See `task_list.md` / `AGENT2-HANDOF
 in the webui repo for the project split; the authoritative design is
 helper-1's design doc (piece 1), which gates this shell (piece 2).
 
-## Status: SCAFFOLD ONLY (2026-08-22)
-- Design-independent skeleton: no endpoints, payloads, poll rates, or hook
-  mechanism are baked in yet — those come from the design doc.
-- Audio hook is a **swappable module** (design-direction hold): the app talks
-  to `src/audio_hook/audio_hook.h`, and the chosen mechanism (in-process
-  inject vs Windows APO vs loopback capture) is a drop-in implementation.
-- DSP core slot (`src/dsp/`) is reserved for helper-1's piece 3 port.
-- Installer harness (`install/`) is a placeholder; the real setup spec comes
-  from the design doc.
+## Status: SCAFFOLD — aligned to DESIGN.md v0.1 (helper-1, piece 1, 7ccfec3)
+- API contract (endpoints, auth, poll rates), DSP interface and install
+  layout now follow DESIGN.md sections 2 / 4 / 6. Hook mechanism remains a
+  **swappable module** (section 5 — boss decision pending); `AudioHook` is
+  the slot.
+- `src/webui_client/` has the full contract + a linkable STUB (WinHTTP
+  polling loop is the next piece-2 increment).
+- DSP core slot = `src/dsp/dsp_engine.h` (ise::Grid / SubmergeTracker /
+  AcousticEngine) — helper-1's piece 3.
+- Installer (`install/installer.nsi`) implements the section-4 layout;
+  game-side hook placement is commented out until section 5 resolves.
 
 ## Layout
-- `CMakeLists.txt`  — Windows C++17 build (static link, x64)
+- `CMakeLists.txt`  — Windows C++17 build (MSVC, x64, static runtime)
 - `src/main.cpp`    — entry point / shell wiring
-- `src/audio_hook/` — abstract hook interface (mechanism-agnostic)
-- `src/webui_client/` — abstract data-client slot (contract TBD)
-- `src/dsp/`        — DSP engine slot (helper-1, piece 3)
-- `install/`        — installer harness placeholder (NSIS template)
+- `src/audio_hook/` — swappable hook slot (inject / APO / loopback)
+- `src/webui_client/` — data client (contract per DESIGN.md §2; stub impl)
+- `src/dsp/`        — DSP core interface (helper-1, piece 3)
+- `install/`        — NSIS installer (layout per DESIGN.md §4)
+- `settings.json`   — app settings sample
 
-## Build (once sources land)
+## Build (Windows / Visual Studio)
 cmake -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
 
-Nothing here is pushed to origin/main — this scaffold stays local until the
-design doc gates piece 2.
+## Push status
+Committed locally, UNPUSHED — scaffold stays local until the design doc
+gates piece 2 (TaskSplitter hold).

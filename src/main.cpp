@@ -1,9 +1,9 @@
-// Isle Sound Enhancer - entry point (scaffold).
+// Isle Sound Enhancer - entry point (scaffold, aligned to DESIGN.md v0.1).
 //
-// Shell wiring only at this stage: the audio hook, webui client and DSP
-// engine are abstract slots whose implementations are gated on the design
-// doc (piece 1). The hook mechanism in particular is intentionally swappable
-// (inject vs APO vs loopback) per the design-direction hold.
+// App shell wiring: loads settings.json (section 4 layout), starts the
+// webui client (DESIGN.md 2.2/2.3 poll contract), and attaches the audio
+// hook (section 5 - swappable, boss decision pending). The DSP core
+// (ise_dsp.h) is helper-1's piece 3; this shell only wires it.
 
 #include "audio_hook/audio_hook.h"
 #include "dsp/dsp_engine.h"
@@ -11,25 +11,43 @@
 
 #include <windows.h>
 #include <memory>
+#include <string>
+
+// settings.json — C:\IsleSoundEnhancer\settings.json
+//   { "webui_url": "http://localhost:9385",
+//     "session_cookie_ref": "auto|manual",
+//     "quality": "medium" }
+struct Settings {
+  std::string webuiUrl = "http://localhost:9385";
+  std::string sessionCookie;   // runtime-only, never embedded
+};
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
-  // Slot owners wire real implementations here once the design doc lands.
-  std::unique_ptr<AudioHook> hook;        // mechanism TBD (swappable)
-  std::unique_ptr<WebUIClient> client;    // endpoints TBD
-  std::unique_ptr<DspEngine> dsp;         // helper-1, piece 3
+  Settings settings;  // TODO(agent-2): load from settings.json + cookie store
 
-  // Zero-latency priority (boss): the hook path must not add buffering;
-  // process() below must run on the hook's render callback quantum.
-  if (hook) hook->attach();
-  if (client) client->start();
+  // WebUI client: polls /api/headings @2 Hz, grid meta @30 s (DESIGN.md 2.3).
+  WebUIClient client(settings.webuiUrl, settings.sessionCookie);
 
-  // Message loop placeholder (tray/window shell comes with the real UI).
-  MSG msg{};
-  while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
-    TranslateMessage(&msg);
-    DispatchMessageW(&msg);
+  // Audio hook: mechanism swappable (inject vs APO vs WASAPI loopback).
+  std::unique_ptr<AudioHook> hook;   // implementation per boss's decision
+
+  // DSP core: helper-1's piece 3, compiled against ise_dsp.h only.
+  ise::AcousticEngine engine;
+
+  if (client.start()) {
+    if (hook) hook->attach();
+    // Shell: each hook render callback reads client.snapshot() ->
+    // engine.envAt/pathAudio -> engine.process. Real-time-safe hand-off
+    // details land with the hook implementation (piece 2 continuation).
+
+    MSG msg{};
+    while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
+    }
+
+    if (hook) hook->detach();
+    client.stop();
   }
-  if (client) client->stop();
-  if (hook) hook->detach();
   return 0;
 }

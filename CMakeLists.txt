@@ -11,6 +11,7 @@ endif()
 
 add_executable(isle_sound_enhancer WIN32
   src/main.cpp
+  src/webui_client/webui_client.cpp
 )
 
 target_include_directories(isle_sound_enhancer PRIVATE src)
